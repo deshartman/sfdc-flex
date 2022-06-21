@@ -1,0 +1,635 @@
+{
+    "description": "SFDC Flex",
+    "states": [
+        {
+            "name": "Trigger",
+            "type": "trigger",
+            "transitions": [
+                {
+                    "next": "split_1",
+                    "event": "incomingMessage"
+                },
+                {
+                    "next": "voice_SF_Get_Contact_Record",
+                    "event": "incomingCall"
+                },
+                {
+                    "event": "incomingConversationMessage"
+                },
+                {
+                    "event": "incomingRequest"
+                },
+                {
+                    "event": "incomingParent"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -310,
+                    "y": -220
+                }
+            }
+        },
+        {
+            "name": "SF_Get_Contact_Record",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "send_and_reply_1",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": -970,
+                    "y": 310
+                },
+                "function_sid": "ZH71a327903f584da4d870b97728f1882c",
+                "parameters": [
+                    {
+                        "value": "{{trigger.message.ChannelAttributes.from}}",
+                        "key": "contact"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/SFDC-get"
+            }
+        },
+        {
+            "name": "create_case",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "send_message_2",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": -990,
+                    "y": 1130
+                },
+                "function_sid": "ZH9755f57b36549d125f951172281cba08",
+                "parameters": [
+                    {
+                        "value": "Bin collection missed",
+                        "key": "subject"
+                    },
+                    {
+                        "value": "{{widgets.SF_Get_Contact_Record.parsed.contact_id}}",
+                        "key": "contact_id"
+                    },
+                    {
+                        "value": "phone",
+                        "key": "origin"
+                    },
+                    {
+                        "value": "{{widgets.SF_Get_Contact_Record.parsed.bearer_token}}",
+                        "key": "bearer_token"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/SFCreateCase"
+            }
+        },
+        {
+            "name": "send_bin",
+            "type": "send-message",
+            "transitions": [
+                {
+                    "next": "create_case",
+                    "event": "sent"
+                },
+                {
+                    "event": "failed"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -990,
+                    "y": 830
+                },
+                "service": "{{trigger.message.InstanceSid}}",
+                "channel": "{{trigger.message.ChannelSid}}",
+                "from": "{{flow.channel.address}}",
+                "to": "{{contact.channel.address}}",
+                "body": "Thanks {{widgets.SF_Get_Contact_Record.parsed.first_name}}, I have logged a service case with our service team. We will collect your bin tomorrow."
+            }
+        },
+        {
+            "name": "send_message_2",
+            "type": "send-message",
+            "transitions": [
+                {
+                    "event": "sent"
+                },
+                {
+                    "event": "failed"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -1000,
+                    "y": 1400
+                },
+                "service": "{{trigger.message.InstanceSid}}",
+                "channel": "{{trigger.message.ChannelSid}}",
+                "from": "{{flow.channel.address}}",
+                "to": "{{contact.channel.address}}",
+                "body": "Thanks for contacting Violia, your case reference for your bin collection is {{widgets.create_case.parsed.id}}"
+            }
+        },
+        {
+            "name": "split_1",
+            "type": "split-based-on",
+            "transitions": [
+                {
+                    "next": "Copy_of_SF_Get_Contact_Record",
+                    "event": "noMatch"
+                },
+                {
+                    "next": "SF_Get_Contact_Record",
+                    "event": "match",
+                    "conditions": [
+                        {
+                            "friendly_name": "binCollect",
+                            "arguments": [
+                                "{{trigger.message.Body}}"
+                            ],
+                            "type": "contains",
+                            "value": "collect"
+                        }
+                    ]
+                }
+            ],
+            "properties": {
+                "input": "{{trigger.message.Body}}",
+                "offset": {
+                    "x": -770,
+                    "y": 50
+                }
+            }
+        },
+        {
+            "name": "Copy_of_SF_Get_Contact_Record",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "send_and_reply_2",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": -1350,
+                    "y": 260
+                },
+                "function_sid": "ZH71a327903f584da4d870b97728f1882c",
+                "parameters": [
+                    {
+                        "value": "{{trigger.message.ChannelAttributes.from}}",
+                        "key": "contact"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/SFDC-get"
+            }
+        },
+        {
+            "name": "Copy_of_send_bin",
+            "type": "send-message",
+            "transitions": [
+                {
+                    "next": "get_case",
+                    "event": "sent"
+                },
+                {
+                    "event": "failed"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -1460,
+                    "y": 1430
+                },
+                "service": "{{trigger.message.InstanceSid}}",
+                "channel": "{{trigger.message.ChannelSid}}",
+                "from": "{{flow.channel.address}}",
+                "to": "{{contact.channel.address}}",
+                "body": "Thanks for this information, Please wait a moment while I connect you to one of our service representatives."
+            }
+        },
+        {
+            "name": "send_and_reply_2",
+            "type": "send-and-wait-for-reply",
+            "transitions": [
+                {
+                    "next": "send_and_reply_3",
+                    "event": "incomingMessage"
+                },
+                {
+                    "next": "send_and_reply_3",
+                    "event": "timeout"
+                },
+                {
+                    "event": "deliveryFailure"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -1390,
+                    "y": 510
+                },
+                "service": "{{trigger.message.InstanceSid}}",
+                "channel": "{{trigger.message.ChannelSid}}",
+                "from": "{{flow.channel.address}}",
+                "body": "Hi, thanks for contacting Violia {{widgets.Copy_of_SF_Get_Contact_Record.parsed.first_name}}, It looks like you're contacting us from Brookvale Bike Factory, is this correct?",
+                "timeout": "3600"
+            }
+        },
+        {
+            "name": "send_and_reply_3",
+            "type": "send-and-wait-for-reply",
+            "transitions": [
+                {
+                    "next": "addNotes",
+                    "event": "incomingMessage"
+                },
+                {
+                    "event": "timeout"
+                },
+                {
+                    "event": "deliveryFailure"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -1500,
+                    "y": 790
+                },
+                "service": "{{trigger.message.InstanceSid}}",
+                "channel": "{{trigger.message.ChannelSid}}",
+                "from": "{{flow.channel.address}}",
+                "body": "ok, thanks for that. I can see you currently have two 1000L blue bins serviced by Violia. What additonal bins do you need?",
+                "timeout": "3600"
+            }
+        },
+        {
+            "name": "addNotes",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "Copy_of_send_bin",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": -1490,
+                    "y": 1100
+                },
+                "function_sid": "ZHb50f2b0cac779028794a25c32cb7cbbc",
+                "parameters": [
+                    {
+                        "value": "{{widgets.send_and_reply_3.inbound.Body}}",
+                        "key": "comment"
+                    },
+                    {
+                        "value": "{{widgets.Copy_of_SF_Get_Contact_Record.parsed.caseID}}",
+                        "key": "caseID"
+                    },
+                    {
+                        "value": "{{widgets.Copy_of_SF_Get_Contact_Record.parsed.bearer_token}}",
+                        "key": "bearer_token"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/PostToChatterCase"
+            }
+        },
+        {
+            "name": "send_to_flex_2",
+            "type": "send-to-flex",
+            "transitions": [
+                {
+                    "event": "callComplete"
+                },
+                {
+                    "event": "failedToEnqueue"
+                },
+                {
+                    "event": "callFailure"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -1630,
+                    "y": 2480
+                },
+                "workflow": "WW8ded60d58dbc7a520e2bedc45e574cac",
+                "channel": "TCc3b11f9c6483e712fdb6d72bc05a06b2",
+                "attributes": "{\n\"sfdcSearchString\":\"{{flow.variables.sfdcSearchString}}\"\n}"
+            }
+        },
+        {
+            "name": "get_case",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "set_variables_1",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": -1630,
+                    "y": 1910
+                },
+                "function_sid": "ZH71a327903f584da4d870b97728f1882c",
+                "parameters": [
+                    {
+                        "value": "{{trigger.message.ChannelAttributes.from}}",
+                        "key": "contact"
+                    },
+                    {
+                        "value": "{{widgets.Copy_of_SF_Get_Contact_Record.parsed.bearer_token}}",
+                        "key": "bearer_token"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/SFDC-get"
+            }
+        },
+        {
+            "name": "voice_SF_Get_Contact_Record",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "cust_input",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": -160,
+                    "y": -20
+                },
+                "function_sid": "ZH71a327903f584da4d870b97728f1882c",
+                "parameters": [
+                    {
+                        "value": "{{contact.channel.address}}",
+                        "key": "contact"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/SFDC-get"
+            }
+        },
+        {
+            "name": "cust_input",
+            "type": "gather-input-on-call",
+            "transitions": [
+                {
+                    "event": "keypress"
+                },
+                {
+                    "next": "Voice_addNotes",
+                    "event": "speech"
+                },
+                {
+                    "next": "Voice_addNotes",
+                    "event": "timeout"
+                }
+            ],
+            "properties": {
+                "voice": "Polly.Nicole",
+                "speech_timeout": "auto",
+                "offset": {
+                    "x": 20,
+                    "y": 330
+                },
+                "loop": 1,
+                "finish_on_key": "#",
+                "say": "Hi {{widgets.voice_SF_Get_Contact_Record.parsed.first_name}},\n I can see you currently have a homeloan application in progress. Briefly tell me how I can help?",
+                "language": "en-AU",
+                "stop_gather": true,
+                "gather_language": "en-AU",
+                "profanity_filter": "true",
+                "timeout": 3
+            }
+        },
+        {
+            "name": "Voice_addNotes",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "thanks",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": 200,
+                    "y": 800
+                },
+                "function_sid": "ZHb50f2b0cac779028794a25c32cb7cbbc",
+                "parameters": [
+                    {
+                        "value": "{{widgets.cust_input.SpeechResult}}",
+                        "key": "comment"
+                    },
+                    {
+                        "value": "{{widgets.voice_SF_Get_Contact_Record.parsed.caseID}}",
+                        "key": "caseID"
+                    },
+                    {
+                        "value": "{{widgets.voice_SF_Get_Contact_Record.parsed.bearer_token}}",
+                        "key": "bearer_token"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/PostToChatterCase"
+            }
+        },
+        {
+            "name": "thanks",
+            "type": "say-play",
+            "transitions": [
+                {
+                    "next": "voice_get_case",
+                    "event": "audioComplete"
+                }
+            ],
+            "properties": {
+                "voice": "Polly.Nicole",
+                "offset": {
+                    "x": 210,
+                    "y": 1060
+                },
+                "loop": 1,
+                "say": "Ok, I've added your comments as a new note to the case..\nPlease wait a moment while I connect you to one of our service representatives.",
+                "language": "en-AU"
+            }
+        },
+        {
+            "name": "set_variables_1",
+            "type": "set-variables",
+            "transitions": [
+                {
+                    "next": "send_to_flex_2",
+                    "event": "next"
+                }
+            ],
+            "properties": {
+                "variables": [
+                    {
+                        "value": "{{widgets.get_case.parsed.CaseNumber}}",
+                        "key": "sfdcSearchString"
+                    }
+                ],
+                "offset": {
+                    "x": -1690,
+                    "y": 2150
+                }
+            }
+        },
+        {
+            "name": "set_variables_2",
+            "type": "set-variables",
+            "transitions": [
+                {
+                    "next": "send_to_flex_voice",
+                    "event": "next"
+                }
+            ],
+            "properties": {
+                "variables": [
+                    {
+                        "value": "{{widgets.voice_get_case.parsed.CaseNumber}}",
+                        "key": "sfdcSearchString"
+                    }
+                ],
+                "offset": {
+                    "x": 220,
+                    "y": 1560
+                }
+            }
+        },
+        {
+            "name": "voice_get_case",
+            "type": "run-function",
+            "transitions": [
+                {
+                    "next": "set_variables_2",
+                    "event": "success"
+                },
+                {
+                    "event": "fail"
+                }
+            ],
+            "properties": {
+                "service_sid": "ZS219af6542561523f5e510d8069b8edc0",
+                "environment_sid": "ZE658e3726033c6e76885499850e8b844a",
+                "offset": {
+                    "x": 220,
+                    "y": 1300
+                },
+                "function_sid": "ZH71a327903f584da4d870b97728f1882c",
+                "parameters": [
+                    {
+                        "value": "{{contact.channel.address}}",
+                        "key": "contact"
+                    },
+                    {
+                        "value": "{{widgets.voice_SF_Get_Contact_Record.parsed.bearer_token}}",
+                        "key": "bearer_token"
+                    }
+                ],
+                "url": "https://sfdc-flex-9916-dev.twil.io/SFDC-get"
+            }
+        },
+        {
+            "name": "send_and_reply_1",
+            "type": "send-and-wait-for-reply",
+            "transitions": [
+                {
+                    "next": "send_bin",
+                    "event": "incomingMessage"
+                },
+                {
+                    "event": "timeout"
+                },
+                {
+                    "event": "deliveryFailure"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": -980,
+                    "y": 570
+                },
+                "service": "{{trigger.message.InstanceSid}}",
+                "channel": "{{trigger.message.ChannelSid}}",
+                "from": "{{flow.channel.address}}",
+                "body": "Hi, {{widgets.SF_Get_Contact_Record.parsed.first_name}}, thanks for contact Violia. I see your bin was due for collection today. Apologies for missing this. We can collect your bin tomorrow, please confirm this is ok.",
+                "timeout": "3600"
+            }
+        },
+        {
+            "name": "send_to_flex_voice",
+            "type": "send-to-flex",
+            "transitions": [
+                {
+                    "event": "callComplete"
+                },
+                {
+                    "event": "failedToEnqueue"
+                },
+                {
+                    "event": "callFailure"
+                }
+            ],
+            "properties": {
+                "offset": {
+                    "x": 220,
+                    "y": 1820
+                },
+                "workflow": "WW8ded60d58dbc7a520e2bedc45e574cac",
+                "channel": "TC89a12d5fc57ce641f6d66236633e58dd",
+                "attributes": "{\n\"sfdcSearchString\":\"{{flow.variables.sfdcSearchString}}\"\n}"
+            }
+        }
+    ],
+    "initial_state": "Trigger",
+    "flags": {
+        "allow_concurrent_calls": true
+    }
+}
