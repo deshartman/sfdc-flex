@@ -1,14 +1,7 @@
-// const got = require("got");
 const axios = require('axios');
 
 exports.handler = async function (context, event, callback) {
   let auth_url = "https://login.salesforce.com/services/oauth2/token";
-  // let client_id = process.env.SFDC_CLIENT_ID;
-  // let client_secret = process.env.SFDC_CLIENT_SECRET;
-  // let username = process.env.SFDC_USERNAME;
-  // let password = process.env.SFDC_PASSWORD;
-  // let grant_type = "password";
-  // console.log("event: " + JSON.stringify(event));
 
   // URL Encode the POST body data
   const urlEncodedAuth_params = new URLSearchParams();
@@ -48,24 +41,32 @@ exports.handler = async function (context, event, callback) {
   }
   query = query + query_lookup;
 
-  // console.log(`The query is: ${query}`);
-
   // URL Encode the POST body data
   const urlEncodedQuery = new URLSearchParams();
   urlEncodedQuery.append('q', query);
 
+  let bearer_token;
+
   // First step is to get the token
   try {
-    console.log(`Getting token with Auth Params ${urlEncodedAuth_params}`);
+    console.log(`SFDC Get Event: ${JSON.stringify(event, null, 4)}`);
 
-    axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
-    const response = await axios.post(auth_url, urlEncodedAuth_params);
+    if (event.bearer_token) {
+      console.log(`ALREADY HAVE A BEARER TOKEN`);
+      bearer_token = event.bearer_token;
+    } else {
+      console.log(`Getting token with Auth Params ${urlEncodedAuth_params}`);
 
-    console.log(`Got token: ${response.data.access_token}`);
+      axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
+      const response = await axios.post(auth_url, urlEncodedAuth_params);
 
+      console.log(`Got token: ${response.data.access_token}`);
+
+      bearer_token = response.data.access_token;
+    }
     // Set the token in the headers
     axios.defaults.headers.common = {
-      'Authorization': 'Bearer ' + response.data.access_token,
+      'Authorization': 'Bearer ' + bearer_token,
     };
   } catch (error) {
     console.log(`Token Post Error: ${error}`);
@@ -73,11 +74,7 @@ exports.handler = async function (context, event, callback) {
   }
 
   // Now we can query the API using the token
-  console.log(`URL: >>>> [${query_url}?${urlEncodedQuery}]`)
-
-
   try {
-    // axios.defaults.headers.get['Content-Type'] = 'application/x-www-form-urlencoded';
     // console.log(`Querying SFDC with query: ${query_url}?${urlEncodedQuery}`);
     const response = await axios.get(`${query_url}?${urlEncodedQuery}`);
 
@@ -87,7 +84,7 @@ exports.handler = async function (context, event, callback) {
 
     if (response.data.records && response.data.records.length > 0) {
       console.log("returned a contact");
-      console.log(response.data.records[0]);
+      // console.log(SFDCRecord);
       const ReportsTo = SFDCRecord.ReportsTo;
       let caseNumber = SFDCRecord.Cases.records[0].CaseNumber;
       console.log(caseNumber);
@@ -95,7 +92,7 @@ exports.handler = async function (context, event, callback) {
       if (response.data.records[0].Cases.records && SFDCRecord.Cases.records[0].Id !== null) {
         console.log("returned a case");
         caseID = SFDCRecord.Cases.records[0].Id;
-        console.log(caseID);
+        // console.log(caseID);
       }
       else {
         console.log("No case");
@@ -109,6 +106,7 @@ exports.handler = async function (context, event, callback) {
       }
 
       const SFDCRecord_return = {
+        bearer_token: bearer_token,
         contact_id: SFDCRecord.Id,
         reportsto_id: ReportsTo ? ReportsTo.Member_ID__c : "",
         reportsto_name: ReportsTo ? ReportsTo.Name : "",
@@ -119,29 +117,23 @@ exports.handler = async function (context, event, callback) {
         email: SFDCRecord.Email,
         member_id: SFDCRecord.Member_ID__c,
         last_name: SFDCRecord.LastName,
-        account: SFDCRecord.Account
-          ? SFDCRecord.Account.Name
-          : "",
+        account: SFDCRecord.Account ? SFDCRecord.Account.Name : "",
         phone: SFDCRecord.Phone,
-        points: SFDCRecord.LoyaltyPoints__c
-          ? SFDCRecord.LoyaltyPoints__c
-          : 0,
+        points: SFDCRecord.LoyaltyPoints__c ? SFDCRecord.LoyaltyPoints__c : 0,
         join_date: SFDCRecord.CreatedDate,
-        bill_due: SFDCRecord.Tasks
-          ? SFDCRecord.Tasks.records[0].ActivityDate
-          : "",
-        tier: SFDCRecord.LoyaltyTier__c
-          ? SFDCRecord.LoyaltyTier__c
-          : 0,
+        bill_due: SFDCRecord.Tasks ? SFDCRecord.Tasks.records[0].ActivityDate : "",
+        tier: SFDCRecord.LoyaltyTier__c ? SFDCRecord.LoyaltyTier__c : 0,
         cases: SFDCRecord.Cases,
         CaseNumber: caseNumber,
         caseID: caseID,
-      }
+      };
 
-      callback(null, SFDCRecord_return);
+      console.log(`SFDCRecord_return: ${JSON.stringify(SFDCRecord_return, null, 4)}`);
+
+      return callback(null, SFDCRecord_return);
     } else {
       console.log("no contact found:" + JSON.stringify(response.data));
-      callback(null, {
+      return callback(null, {
         points: 0
       });
     }
